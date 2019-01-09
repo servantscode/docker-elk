@@ -12,6 +12,7 @@ services:
     ports:
       - "9200:9200"
       - "9300:9300"
+    mem_limit: 256m
     environment:
       ES_JAVA_OPTS: "-Xmx256m -Xms256m"
     networks:
@@ -28,6 +29,7 @@ services:
     ports:
       - "5044:5044"
       - "9600:9600"
+    mem_limit: 256m
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
     networks:
@@ -48,6 +50,7 @@ services:
       - elk
     depends_on:
       - elasticsearch
+    mem_limit: 256m
 
 networks:
 
