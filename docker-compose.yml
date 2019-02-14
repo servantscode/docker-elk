@@ -29,7 +29,7 @@ services:
     ports:
       - "5044:5044"
       - "9600:9600"
-    mem_limit: 256m
+    mem_limit: 512m
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
     networks:
