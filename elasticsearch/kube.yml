@@ -1,0 +1,157 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: es-data-vol-1
+  labels:
+    type: local
+    app: elasticsearch
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local
+  hostPath:
+    path: '/host_mnt/d/data/es1'
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: es-data-vol-2
+  labels:
+    type: local
+    app: elasticsearch
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local
+  hostPath:
+    path: '/host_mnt/d/data/es2'
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+spec:
+  serviceName: elasticsearch
+  # NOTE: This is number of nodes that we want to run
+  # you may update this
+  replicas: 2
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      terminationGracePeriodSeconds: 300
+      initContainers:
+      # NOTE:
+      # This is to fix the permission on the volume
+      # By default elasticsearch container is not run as
+      # non root user.
+      # https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_notes_for_production_use_and_defaults
+      - name: fix-the-volume-permission
+        image: busybox
+        command:
+        - sh
+        - -c
+        - chown -R 1000:1000 /usr/share/elasticsearch/data
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/elasticsearch/data
+      # NOTE:
+      # To increase the default vm.max_map_count to 262144
+      # https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-cli-run-prod-mode
+      - name: increase-the-vm-max-map-count
+        image: busybox
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        securityContext:
+          privileged: true
+      # To increase the ulimit
+      # https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#_notes_for_production_use_and_defaults
+      - name: increase-the-ulimit
+        image: busybox
+        command:
+        - sh
+        - -c
+        - ulimit -n 65536
+        securityContext:
+          privileged: true
+      containers:
+      - name: elasticsearch
+        image: docker-elk_elasticsearch
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: tcp
+        # NOTE: you can increase this resources
+        resources:
+          requests:
+            memory: 512Mi
+          limits:
+            memory: 1024Mi
+        env:
+          # NOTE: the cluster name; update this
+          - name: cluster.name
+            value: sc-logging
+          - name: node.name
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          # NOTE: This will tell the elasticsearch node where to connect to other nodes to form a cluster
+          - name: discovery.zen.ping.unicast.hosts
+#            value: "elasticsearch-0.es.default.svc.cluster.local,elasticsearch-1.es.default.svc.cluster.local,elasticsearch-2.es.default.svc.cluster.local,elasticsearch-3.es.default.svc.cluster.local,elasticsearch-4.es.default.svc.cluster.local"
+            value: "elasticsearch"
+          # NOTE: You can increase the heap size
+          - name: ES_JAVA_OPTS
+            value: -Xms256m -Xmx256m
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/elasticsearch/data
+#        - name: config
+#          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+#      volumes:
+#      - name: config
+#        configMap:
+#          name: elasticsearch-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: local
+      selector:
+        matchLabels:
+          app: elasticsearch
+      resources:
+        requests:
+          storage: 5Gi
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+  - port: 9200
+    name: serving
+  - port: 9300
+    name: node-to-node
