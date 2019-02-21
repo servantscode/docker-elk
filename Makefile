@@ -29,15 +29,15 @@ help: ## This help.
 # Build the container
 build: ## Build the container
 	cd elasticsearch; docker.exe build -t docker-elk_elasticsearch --build-arg ELK_VERSION=$(VERSION) .
-	kubectl.exe create configmap logstash-config --from-file logstash/config/logstash.yml
-	kubectl.exe create configmap pipeline-config --from-file logstash/pipeline/logstash.conf
 	cd logstash; docker.exe build -t docker-elk_logstash --build-arg ELK_VERSION=$(VERSION) .
-	kubectl.exe create configmap kibana-config --from-file kibana/config/kibana.yml
 	cd kibana; docker.exe build -t docker-elk_kibana --build-arg ELK_VERSION=$(VERSION) .
 
 run: ## Run container on port configured in `config.env`
 	kubectl.exe create -f elasticsearch/kube.yml
+	kubectl.exe create configmap logstash-config --from-file logstash/config/logstash.yml
+	kubectl.exe create configmap pipeline-config --from-file logstash/pipeline/logstash.conf
 	kubectl.exe create -f logstash/kube.yml 
+	kubectl.exe create configmap kibana-config --from-file kibana/config/kibana.yml
 	kubectl.exe create -f kibana/kube.yml
 
 up: build run ## Run container on port configured in `config.env` (Alias to run)
