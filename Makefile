@@ -13,6 +13,12 @@
 # grep the version from the mix file
 VERSION=$(shell cat version.txt)
 
+LATEST=$(shell kubectl.exe describe deployment kibana | grep Image | grep latest)
+ifeq ($(LATEST),)
+TAG=:latest
+else
+TAG=
+endif
 
 # HELP
 # This will output the help for each task
@@ -41,6 +47,11 @@ run: ## Run container on port configured in `config.env`
 	kubectl.exe create -f kibana/kube.yml
 
 up: build run ## Run container on port configured in `config.env` (Alias to run)
+
+update:
+	kubectl.exe set image statefulset/elasticsearch elasticsearch=docker-elk_elasticsearch$(TAG)
+	kubectl.exe set image deployment/logstash logstash=docker-elk_logstash$(TAG)
+	kubectl.exe set image deployment/kibana kibana=docker-elk_kibana$(TAG)
 
 stop: ## Stop and remove a running container
 	kubectl.exe delete -f kibana/kube.yml
