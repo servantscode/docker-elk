@@ -61,7 +61,7 @@ stop: ## Stop and remove a running container
 	kubectl.exe delete configmap pipeline-config
 	kubectl.exe delete -f elasticsearch/kube.yml
 
-release: build-nc publish ## Make a release by building and publishing the `{version}` ans `latest` tagged containers to ECR
+#release: build-nc publish ## Make a release by building and publishing the `{version}` ans `latest` tagged containers to ECR
 
 # Docker publish
 # publish: repo-login publish-latest publish-version ## Publish the `{version}` ans `latest` tagged containers to ECR
