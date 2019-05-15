@@ -60,6 +60,7 @@ stop: ## Stop and remove a running container
 	kubectl.exe delete configmap logstash-config
 	kubectl.exe delete configmap pipeline-config
 	kubectl.exe delete -f elasticsearch/kube.yml
+	kubectl.exe delete pvc data-elasticsearch-0 data-elasticsearch-1
 
 #release: build-nc publish ## Make a release by building and publishing the `{version}` ans `latest` tagged containers to ECR
 
