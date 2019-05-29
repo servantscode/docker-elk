@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apm-server
+  labels:
+    app: apm-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apm-server
+  template:
+    metadata:
+      labels:
+        app: apm-server
+    spec:
+      containers:
+      - name: apm-server
+        image: docker-elk_apm-server
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5601
+          name: http
+        resources:
+          requests:
+            memory: 256Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: apm-server-config
+          mountPath: /usr/share/apm-server/config/
+      volumes:
+      - name: apm-server-config
+        configMap:
+          name: apm-server-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: apm-server
+  name: apm-server-lb
+  namespace: default
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+  - nodePort: 30924
+    port: 5601
+    protocol: TCP
+    targetPort: 5601
+  selector:
+    app: apm-server
+  sessionAffinity: None
+  type: LoadBalancer
+status:
+  loadBalancer:
+    ingress:
+    - hostname: localhost

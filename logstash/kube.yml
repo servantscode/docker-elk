@@ -40,8 +40,6 @@ spec:
       - name: logstash-config
         configMap:
           name: logstash-config
-#          items:
-#          - key: logstash.yml
       - name: pipeline-config
         configMap:
           name: pipeline-config
